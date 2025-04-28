@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
     const navMenu = document.querySelector('.nav-menu');
     const menuOverlay = document.querySelector('.menu-overlay');
+    const dropdowns = document.querySelectorAll('.dropdown');
 
     // Carousel functionality
     const carouselItems = document.querySelectorAll('.carousel-item');
@@ -45,6 +46,53 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Set active navigation based on current page
+    function setActiveNavigation() {
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('.nav-links a');
+        
+        navLinks.forEach(link => {
+            // Remove all active classes first
+            link.classList.remove('active');
+            
+            // Get the href attribute
+            const href = link.getAttribute('href');
+            
+            // Check if this is the current page
+            if (href === currentPath || 
+                (currentPath.endsWith('/') && href === currentPath + 'index.html') ||
+                (!currentPath.includes('/') && href === './index.html') ||
+                (currentPath === '/' && href === 'index.html')) {
+                link.classList.add('active');
+            }
+            
+            // Special case for sections in index.html
+            if (currentPath.includes('index.html') && href === '#intro-section') {
+                link.setAttribute('href', '#intro-section');
+            } else if (href === '#intro-section') {
+                link.setAttribute('href', 'index.html#intro-section');
+            }
+        });
+    }
+
+    // Call setActiveNavigation on page load
+    setActiveNavigation();
+
+    // Dropdown functionality for mobile
+    dropdowns.forEach(dropdown => {
+        const dropdownLink = dropdown.querySelector('a');
+        
+        // For mobile devices
+        if (window.innerWidth <= 968) {
+            dropdownLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                dropdown.classList.toggle('active');
+            });
+        }
+        
+        // For desktop hover functionality is handled by CSS
+    });
+
     // Toggle menu and overlay
     mobileMenuBtn.addEventListener('click', () => {
         navMenu.classList.toggle('active');
@@ -63,26 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
         icon.classList.remove('fa-times');
     });
 
-    // Handle navigation items
-    const navLinks = document.querySelectorAll('.nav-links a');
-    navLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            // Remove active class from all links
-            navLinks.forEach(l => l.classList.remove('active'));
-            // Add active class to clicked link
-            link.classList.add('active');
-            
-            // Close mobile menu if open
-            if (window.innerWidth <= 968) {
-                navMenu.classList.remove('active');
-                menuOverlay.classList.remove('active');
-                const icon = mobileMenuBtn.querySelector('i');
-                icon.classList.add('fa-bars');
-                icon.classList.remove('fa-times');
-            }
-        });
-    });
-
     // Close menu when clicking outside
     document.addEventListener('click', (e) => {
         if (!navMenu.contains(e.target) && 
@@ -99,14 +127,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Smooth scroll for navigation links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth'
-                });
-                // Close mobile menu after clicking a link
-                navMenu.classList.remove('active');
+            const href = this.getAttribute('href');
+            
+            // Only handle smooth scroll for same-page links
+            if (href.startsWith('#')) {
+                e.preventDefault();
+                const target = document.querySelector(href);
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                    // Close mobile menu after clicking a link
+                    navMenu.classList.remove('active');
+                    menuOverlay.classList.remove('active');
+                }
             }
         });
     });
@@ -197,5 +231,144 @@ document.addEventListener('DOMContentLoaded', () => {
             scrollContainer.scrollLeft = scrollLeft - walk;
             checkScrollPosition();
         });
+    }
+});
+
+// Menu data loading and display
+async function loadMenuData() {
+    try {
+        const response = await fetch('menu-data.json');
+        const menuData = await response.json();
+        displayMenu(menuData);
+    } catch (error) {
+        console.error('Error loading menu data:', error);
+    }
+}
+
+function displayMenu(menuData) {
+    const menuContainer = document.querySelector('.menu-categories');
+    if (!menuContainer) return;
+
+    // Clear existing content
+    menuContainer.innerHTML = '';
+
+    // Loop through each category in the menu data
+    Object.entries(menuData).forEach(([category, data]) => {
+        const categoryElement = document.createElement('div');
+        categoryElement.className = 'menu-category';
+
+        // Create category header
+        const categoryHeader = document.createElement('h2');
+        categoryHeader.textContent = category;
+        categoryElement.appendChild(categoryHeader);
+
+        // Add menu tag if exists
+        if (data['menu-tag']) {
+            const menuTag = document.createElement('span');
+            menuTag.className = 'menu-category-tag';
+            menuTag.textContent = data['menu-tag'];
+            categoryElement.appendChild(menuTag);
+        }
+
+        // Create items container
+        const itemsContainer = document.createElement('div');
+        itemsContainer.className = 'menu-items';
+
+        // Add each item in the category
+        data.items.forEach(item => {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'menu-item';
+
+            const itemDetails = document.createElement('div');
+            itemDetails.className = 'item-details';
+
+            // Add item title
+            const itemTitle = document.createElement('h3');
+            itemTitle.textContent = item['food-title'];
+            itemDetails.appendChild(itemTitle);
+
+            // Add price
+            const price = document.createElement('span');
+            price.className = 'price';
+            price.textContent = `$${item['food-price']}`;
+            itemDetails.appendChild(price);
+
+            // Add description if exists
+            if (item.description) {
+                const description = document.createElement('p');
+                description.className = 'item-description';
+                if (Array.isArray(item.description)) {
+                    description.textContent = item.description.join(', ');
+                } else {
+                    description.textContent = item.description;
+                }
+                itemDetails.appendChild(description);
+            }
+
+            itemElement.appendChild(itemDetails);
+            itemsContainer.appendChild(itemElement);
+        });
+
+        categoryElement.appendChild(itemsContainer);
+        menuContainer.appendChild(categoryElement);
+    });
+}
+
+// Load menu data when the page loads
+document.addEventListener('DOMContentLoaded', loadMenuData);
+
+// Menu Page Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Menu Navigation
+    const menuNavLinks = document.querySelectorAll('.menu-nav-list a');
+    const menuCategories = document.querySelectorAll('.menu-category');
+    const menuItems = document.querySelectorAll('.menu-item');
+    const searchInput = document.getElementById('menuSearch');
+
+    // Function to filter menu items
+    function filterMenuItems() {
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+        const activeCategory = document.querySelector('.menu-nav-list a.active').getAttribute('data-category');
+
+        menuItems.forEach(item => {
+            const itemName = item.querySelector('.item-name').textContent.toLowerCase();
+            const itemDescription = item.querySelector('.item-description')?.textContent.toLowerCase() || '';
+            const itemCategory = item.closest('.menu-category').getAttribute('data-category');
+            
+            const matchesSearch = itemName.includes(searchTerm) || itemDescription.includes(searchTerm);
+            const matchesCategory = activeCategory === 'all' || activeCategory === itemCategory;
+
+            item.classList.toggle('hidden', !(matchesSearch && matchesCategory));
+        });
+
+        // Show/hide categories based on visible items
+        menuCategories.forEach(category => {
+            const hasVisibleItems = Array.from(category.querySelectorAll('.menu-item')).some(item => !item.classList.contains('hidden'));
+            category.classList.toggle('hidden', !hasVisibleItems);
+        });
+    }
+
+    // Category navigation
+    menuNavLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Update active state
+            menuNavLinks.forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            
+            filterMenuItems();
+        });
+    });
+
+    // Search functionality
+    if (searchInput) {
+        searchInput.addEventListener('input', filterMenuItems);
+    }
+
+    // Initialize with 'All' category selected
+    const allCategoryLink = document.querySelector('.menu-nav-list a[data-category="all"]');
+    if (allCategoryLink) {
+        allCategoryLink.classList.add('active');
     }
 }); 
