@@ -97,18 +97,15 @@ document.addEventListener('DOMContentLoaded', () => {
     mobileMenuBtn.addEventListener('click', () => {
         navMenu.classList.toggle('active');
         menuOverlay.classList.toggle('active');
-        const icon = mobileMenuBtn.querySelector('i');
-        icon.classList.toggle('fa-bars');
-        icon.classList.toggle('fa-times');
+        mobileMenuBtn.querySelector('i').classList.toggle('fa-bars');
+        mobileMenuBtn.querySelector('i').classList.toggle('fa-times');
     });
 
-    // Close menu when clicking overlay
     menuOverlay.addEventListener('click', () => {
         navMenu.classList.remove('active');
         menuOverlay.classList.remove('active');
-        const icon = mobileMenuBtn.querySelector('i');
-        icon.classList.add('fa-bars');
-        icon.classList.remove('fa-times');
+        mobileMenuBtn.querySelector('i').classList.add('fa-bars');
+        mobileMenuBtn.querySelector('i').classList.remove('fa-times');
     });
 
     // Close menu when clicking outside
@@ -118,9 +115,8 @@ document.addEventListener('DOMContentLoaded', () => {
             !menuOverlay.contains(e.target)) {
             navMenu.classList.remove('active');
             menuOverlay.classList.remove('active');
-            const icon = mobileMenuBtn.querySelector('i');
-            icon.classList.add('fa-bars');
-            icon.classList.remove('fa-times');
+            mobileMenuBtn.querySelector('i').classList.add('fa-bars');
+            mobileMenuBtn.querySelector('i').classList.remove('fa-times');
         }
     });
 
@@ -371,4 +367,45 @@ document.addEventListener('DOMContentLoaded', function() {
     if (allCategoryLink) {
         allCategoryLink.classList.add('active');
     }
+});
+
+// Dropdown Menu Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const dropdownTriggers = document.querySelectorAll('.dropdown-trigger');
+
+    dropdownTriggers.forEach(trigger => {
+        trigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            const dropdown = trigger.closest('.nav-dropdown');
+            
+            // Close other dropdowns
+            dropdownTriggers.forEach(otherTrigger => {
+                if (otherTrigger !== trigger) {
+                    otherTrigger.closest('.nav-dropdown').classList.remove('active');
+                }
+            });
+            
+            dropdown.classList.toggle('active');
+        });
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.nav-dropdown')) {
+            dropdownTriggers.forEach(trigger => {
+                trigger.closest('.nav-dropdown').classList.remove('active');
+            });
+        }
+    });
+
+    // Update functionality on window resize
+    let timeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            dropdownTriggers.forEach(trigger => {
+                trigger.closest('.nav-dropdown').classList.remove('active');
+            });
+        }, 250);
+    });
 }); 
